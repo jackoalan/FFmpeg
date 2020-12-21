@@ -34,7 +34,9 @@ static inline int utf8towchar(const char *filename_utf8, wchar_t **filename_w)
     }
     *filename_w = (wchar_t *)av_mallocz_array(num_chars, sizeof(wchar_t));
     if (!*filename_w) {
+#ifndef __COREDLL__
         errno = ENOMEM;
+#endif
         return -1;
     }
     MultiByteToWideChar(CP_UTF8, 0, filename_utf8, -1, *filename_w, num_chars);

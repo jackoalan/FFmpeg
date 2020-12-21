@@ -234,7 +234,9 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout)
 
 #if HAVE_WINSOCK2_H
     if (numfds >= FD_SETSIZE) {
+#ifndef __COREDLL__
         errno = EINVAL;
+#endif
         return -1;
     }
 #endif /* HAVE_WINSOCK2_H */

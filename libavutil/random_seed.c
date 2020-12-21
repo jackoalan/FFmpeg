@@ -62,6 +62,15 @@ static int read_random(uint32_t *dst, const char *file)
 #endif
 }
 
+#ifdef __COREDLL__
+#include <windows.h>
+static clock_t 
+clock()
+{
+  return GetTickCount();
+}
+#endif
+
 static uint32_t get_generic_seed(void)
 {
     uint64_t tmp[120/8];

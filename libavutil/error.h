@@ -24,7 +24,11 @@
 #ifndef AVUTIL_ERROR_H
 #define AVUTIL_ERROR_H
 
+#ifndef __COREDLL__
 #include <errno.h>
+#else
+#include <need_errno.h>
+#endif
 #include <stddef.h>
 
 /**

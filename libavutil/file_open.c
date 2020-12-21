@@ -36,9 +36,12 @@
 #undef fstat
 #include <windows.h>
 #include <share.h>
+#ifndef __COREDLL__
 #include <errno.h>
+#endif
 #include "wchar_filename.h"
 
+#ifndef __COREDLL__
 static int win32_open(const char *filename_utf8, int oflag, int pmode)
 {
     int fd;
@@ -60,6 +63,29 @@ fallback:
     /* filename may be in CP_ACP */
     return _sopen(filename_utf8, oflag, SH_DENYNO, pmode);
 }
+#else
+static int win32_open(const char *filename_utf8, int oflag, int pmode)
+{
+    int fd;
+    wchar_t *filename_w;
+
+    /* convert UTF-8 to wide chars */
+    if (utf8towchar(filename_utf8, &filename_w))
+        return -1;
+    if (!filename_w)
+        goto fallback;
+
+    fd = _wopen(filename_w, oflag, pmode);
+    av_freep(&filename_w);
+    
+    if (fd != -1 || (oflag & O_CREAT))
+        return fd;
+
+fallback:
+    /* filename may be in CP_ACP */
+    return _open(filename_utf8, oflag, pmode);
+}
+#endif
 #define open win32_open
 #endif
 
@@ -147,7 +173,11 @@ int avpriv_tempfile(const char *prefix, char **filename, int log_offset, void *l
 #endif
     /* -----common section-----*/
     if (fd < 0) {
+#ifndef __COREDLL__
         int err = AVERROR(errno);
+#else
+        int err = AVERROR(EINVAL);
+#endif
         av_log(&file_log_ctx, AV_LOG_ERROR, "ff_tempfile: Cannot open temporary file %s\n", *filename);
         av_freep(filename);
         return err;
@@ -166,7 +196,9 @@ FILE *av_fopen_utf8(const char *path, const char *mode)
     case 'w': access = O_CREAT|O_WRONLY|O_TRUNC; break;
     case 'a': access = O_CREAT|O_WRONLY|O_APPEND; break;
     default :
+#ifndef __COREDLL__
         errno = EINVAL;
+#endif
         return NULL;
     }
     while (*m) {
@@ -178,7 +210,9 @@ FILE *av_fopen_utf8(const char *path, const char *mode)
             access |= O_BINARY;
 #endif
         } else if (*m) {
+#ifndef __COREDLL__
             errno = EINVAL;
+#endif
             return NULL;
         }
         m++;

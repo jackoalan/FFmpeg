@@ -5846,9 +5846,15 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 av_free(buffer);
                 return AVERROR(ENOMEM);
             }
+#ifndef __COREDLL__
             errno = 0;
+#endif
             ret = strtol(ptr, &endptr, 10);
-            if (ret < 0 || errno || *endptr != '"') {
+            if (ret < 0 || 
+#ifndef __COREDLL__
+                errno || 
+#endif
+                *endptr != '"') {
                 c->bitrates[c->bitrates_count - 1] = 0;
             } else {
                 c->bitrates[c->bitrates_count - 1] = ret;

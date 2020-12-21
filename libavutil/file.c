@@ -63,16 +63,24 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
     *size = 0;
 
     if (fd < 0) {
+#ifndef __COREDLL__
         err = AVERROR(errno);
         av_strerror(err, errbuf, sizeof(errbuf));
         av_log(&file_log_ctx, AV_LOG_ERROR, "Cannot read file '%s': %s\n", filename, errbuf);
+#else
+        av_log(&file_log_ctx, AV_LOG_ERROR, "Cannot read file '%s'\n", filename);
+#endif
         return err;
     }
 
     if (fstat(fd, &st) < 0) {
+#ifndef __COREDLL__
         err = AVERROR(errno);
         av_strerror(err, errbuf, sizeof(errbuf));
         av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in fstat(): %s\n", errbuf);
+#else
+        av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in fstat()\n");
+#endif
         close(fd);
         return err;
     }
@@ -94,9 +102,13 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
 #if HAVE_MMAP
     ptr = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
     if (ptr == MAP_FAILED) {
+#ifndef __COREDLL__
         err = AVERROR(errno);
         av_strerror(err, errbuf, sizeof(errbuf));
         av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in mmap(): %s\n", errbuf);
+#else
+        av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in mmap()\n");
+#endif
         close(fd);
         *size = 0;
         return err;

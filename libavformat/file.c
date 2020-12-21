@@ -116,7 +116,11 @@ static int file_read(URLContext *h, unsigned char *buf, int size)
         return AVERROR(EAGAIN);
     if (ret == 0)
         return AVERROR_EOF;
+#ifdef __COREDLL__
+    return (ret == -1) ? AVERROR(EINVAL) : ret;
+#else
     return (ret == -1) ? AVERROR(errno) : ret;
+#endif
 }
 
 static int file_write(URLContext *h, const unsigned char *buf, int size)
@@ -125,7 +129,11 @@ static int file_write(URLContext *h, const unsigned char *buf, int size)
     int ret;
     size = FFMIN(size, c->blocksize);
     ret = write(c->fd, buf, size);
+#ifdef __COREDLL__
+    return (ret == -1) ? AVERROR(EINVAL) : ret;
+#else
     return (ret == -1) ? AVERROR(errno) : ret;
+#endif
 }
 
 static int file_get_handle(URLContext *h)
@@ -143,7 +151,11 @@ static int file_check(URLContext *h, int mask)
     {
 #if HAVE_ACCESS && defined(R_OK)
     if (access(filename, F_OK) < 0)
+#ifdef __COREDLL__
+        return AVERROR(EINVAL);
+#else
         return AVERROR(errno);
+#endif
     if (mask&AVIO_FLAG_READ)
         if (access(filename, R_OK) >= 0)
             ret |= AVIO_FLAG_READ;
@@ -169,7 +181,7 @@ static int file_check(URLContext *h, int mask)
 
 static int file_delete(URLContext *h)
 {
-#if HAVE_UNISTD_H
+#if HAVE_UNISTD_H && !defined(__COREDLL__)
     int ret;
     const char *filename = h->filename;
     av_strstart(filename, "file:", &filename);
@@ -198,7 +210,11 @@ static int file_move(URLContext *h_src, URLContext *h_dst)
     av_strstart(filename_dst, "file:", &filename_dst);
 
     if (rename(filename_src, filename_dst) < 0)
+#ifdef __COREDLL__
+        return AVERROR(EINVAL);
+#else
         return AVERROR(errno);
+#endif
 
     return 0;
 }
@@ -210,8 +226,10 @@ static int file_open(URLContext *h, const char *filename, int flags)
     FileContext *c = h->priv_data;
     int access;
     int fd;
+#ifndef __COREDLL__
     struct stat st;
-
+#endif
+    
     av_strstart(filename, "file:", &filename);
 
     if (flags & AVIO_FLAG_WRITE && flags & AVIO_FLAG_READ) {
@@ -230,10 +248,18 @@ static int file_open(URLContext *h, const char *filename, int flags)
 #endif
     fd = avpriv_open(filename, access, 0666);
     if (fd == -1)
+#ifndef __COREDLL__
         return AVERROR(errno);
+#else
+        return AVERROR(EINVAL);
+#endif
     c->fd = fd;
 
+#ifndef __COREDLL__
     h->is_streamed = !fstat(fd, &st) && S_ISFIFO(st.st_mode);
+#else
+    h->is_streamed = 0;
+#endif
 
     /* Buffer writes more than the default 32k to improve throughput especially
      * with networked file systems */
@@ -242,7 +268,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
 
     if (c->seekable >= 0)
         h->is_streamed = !c->seekable;
-
+    
     return 0;
 }
 
@@ -255,12 +281,20 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
     if (whence == AVSEEK_SIZE) {
         struct stat st;
         ret = fstat(c->fd, &st);
+#ifndef __COREDLL__
         return ret < 0 ? AVERROR(errno) : (S_ISFIFO(st.st_mode) ? 0 : st.st_size);
+#else
+        return ret < 0 ? AVERROR(EINVAL) : (S_ISFIFO(st.st_mode) ? 0 : st.st_size);
+#endif
     }
 
     ret = lseek(c->fd, pos, whence);
 
+#ifndef __COREDLL__
     return ret < 0 ? AVERROR(errno) : ret;
+#else
+    return ret < 0 ? AVERROR(EINVAL) : ret;
+#endif
 }
 
 static int file_close(URLContext *h)

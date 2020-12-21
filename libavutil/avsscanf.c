@@ -142,7 +142,9 @@ static unsigned long long ffintscan(FFFILE *f, unsigned base, int pok, unsigned 
     unsigned x;
     unsigned long long y;
     if (base > 36 || base == 1) {
+#ifndef __COREDLL__
         errno = EINVAL;
+#endif
         return 0;
     }
     while (av_isspace((c=shgetc(f))));
@@ -169,7 +171,9 @@ static unsigned long long ffintscan(FFFILE *f, unsigned base, int pok, unsigned 
         if (val[c] >= base) {
             shunget(f);
             shlim(f, 0);
+#ifndef __COREDLL__
             errno = EINVAL;
+#endif
             return 0;
         }
     }
@@ -193,7 +197,9 @@ static unsigned long long ffintscan(FFFILE *f, unsigned base, int pok, unsigned 
     }
     if (val[c]<base) {
         for (; val[c]<base; c=shgetc(f));
+#ifndef __COREDLL__
         errno = ERANGE;
+#endif
         y = lim;
         if (lim&1) neg = 0;
     }
@@ -201,10 +207,14 @@ done:
     shunget(f);
     if (y>=lim) {
         if (!(lim&1) && !neg) {
+#ifndef __COREDLL__
             errno = ERANGE;
+#endif
             return lim-1;
         } else if (y>lim) {
+#ifndef __COREDLL__
             errno = ERANGE;
+#endif
             return lim;
         }
     }
@@ -313,7 +323,9 @@ static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
         shunget(f);
     }
     if (!gotdig) {
+#ifndef __COREDLL__
         errno = EINVAL;
+#endif
         shlim(f, 0);
         return 0;
     }
@@ -325,11 +337,15 @@ static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
     if (lrp==dc && dc<10 && (bits>30 || x[0]>>bits==0))
         return sign * (double)x[0];
     if (lrp > -emin/2) {
+#ifndef __COREDLL__
         errno = ERANGE;
+#endif
         return sign * DBL_MAX * DBL_MAX;
     }
     if (lrp < emin-2*DBL_MANT_DIG) {
+#ifndef __COREDLL__
         errno = ERANGE;
+#endif
         return sign * DBL_MIN * DBL_MIN;
     }
 
@@ -487,8 +503,10 @@ static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
             y *= 0.5;
             e2++;
         }
+#ifndef __COREDLL__
         if (e2+DBL_MANT_DIG>emax || (denormal && frac))
             errno = ERANGE;
+#endif
     }
 
     return scalbn(y, e2);
@@ -570,11 +588,15 @@ static double hexfloat(FFFILE *f, int bits, int emin, int sign, int pok)
 
     if (!x) return sign * 0.0;
     if (e2 > -emin) {
+#ifndef __COREDLL__
         errno = ERANGE;
+#endif
         return sign * DBL_MAX * DBL_MAX;
     }
     if (e2 < emin-2*DBL_MANT_DIG) {
+#ifndef __COREDLL__
         errno = ERANGE;
+#endif
         return sign * DBL_MIN * DBL_MIN;
     }
 
@@ -602,7 +624,9 @@ static double hexfloat(FFFILE *f, int bits, int emin, int sign, int pok)
     y = bias + sign*(double)x + sign*y;
     y -= bias;
 
+#ifndef __COREDLL__
     if (!y) errno = ERANGE;
+#endif
 
     return scalbn(y, e2);
 }
@@ -662,7 +686,9 @@ static double fffloatscan(FFFILE *f, int prec, int pok)
             if (c==')') return NAN;
             shunget(f);
             if (!pok) {
+#ifndef __COREDLL__
                 errno = EINVAL;
+#endif
                 shlim(f, 0);
                 return 0;
             }
@@ -674,7 +700,9 @@ static double fffloatscan(FFFILE *f, int prec, int pok)
 
     if (i) {
         shunget(f);
+#ifndef __COREDLL__
         errno = EINVAL;
+#endif
         shlim(f, 0);
         return 0;
     }

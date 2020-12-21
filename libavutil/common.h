@@ -30,7 +30,9 @@
 #error missing -D__STDC_CONSTANT_MACROS / #define __STDC_CONSTANT_MACROS
 #endif
 
+#ifndef __COREDLL__
 #include <errno.h>
+#endif
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>

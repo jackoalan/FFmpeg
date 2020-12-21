@@ -894,17 +894,17 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         s->fifo = av_fifo_alloc(s->circular_buffer_size);
         ret = pthread_mutex_init(&s->mutex, NULL);
         if (ret != 0) {
-            av_log(h, AV_LOG_ERROR, "pthread_mutex_init failed : %s\n", strerror(ret));
+            av_log(h, AV_LOG_ERROR, "pthread_mutex_init failed : %s\n", av_err2str(AVERROR(ret)));
             goto fail;
         }
         ret = pthread_cond_init(&s->cond, NULL);
         if (ret != 0) {
-            av_log(h, AV_LOG_ERROR, "pthread_cond_init failed : %s\n", strerror(ret));
+            av_log(h, AV_LOG_ERROR, "pthread_cond_init failed : %s\n", av_err2str(AVERROR(ret)));
             goto cond_fail;
         }
         ret = pthread_create(&s->circular_buffer_thread, NULL, is_output?circular_buffer_task_tx:circular_buffer_task_rx, h);
         if (ret != 0) {
-            av_log(h, AV_LOG_ERROR, "pthread_create failed : %s\n", strerror(ret));
+            av_log(h, AV_LOG_ERROR, "pthread_create failed : %s\n", av_err2str(AVERROR(ret)));
             goto thread_fail;
         }
         s->thread_started = 1;
@@ -1076,14 +1076,16 @@ static int udp_close(URLContext *h)
              * the socket and abort pending IO, subsequent recvfrom() calls
              * will fail with WSAESHUTDOWN causing the thread to exit. */
             shutdown(s->udp_fd, SD_RECEIVE);
+#ifndef __COREDLL__
             CancelIoEx((HANDLE)(SOCKET)s->udp_fd, NULL);
+#endif
 #else
             pthread_cancel(s->circular_buffer_thread);
 #endif
         }
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
-            av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
+            av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", av_err2str(AVERROR(ret)));
         pthread_mutex_destroy(&s->mutex);
         pthread_cond_destroy(&s->cond);
     }

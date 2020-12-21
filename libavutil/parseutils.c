@@ -661,12 +661,16 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         if (!q) {
             char *o;
             /* parse timestr as S+ */
+#ifndef __COREDLL__
             errno = 0;
+#endif
             t = strtoll(p, &o, 10);
             if (o == p) /* the parsing didn't succeed */
                 return AVERROR(EINVAL);
+#ifndef __COREDLL__
             if (errno == ERANGE)
                 return AVERROR(ERANGE);
+#endif
             q = o;
         } else {
             t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;

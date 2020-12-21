@@ -27,7 +27,9 @@
  * Libavcodec external API header
  */
 
+#ifndef __COREDLL__
 #include <errno.h>
+#endif
 #include "libavutil/samplefmt.h"
 #include "libavutil/attributes.h"
 #include "libavutil/avutil.h"

@@ -21,7 +21,9 @@
 #ifndef AVFORMAT_NETWORK_H
 #define AVFORMAT_NETWORK_H
 
+#ifndef __COREDLL__
 #include <errno.h>
+#endif
 #include <stdint.h>
 
 #include "config.h"

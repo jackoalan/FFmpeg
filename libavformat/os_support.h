@@ -40,7 +40,7 @@
 #endif
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__COREDLL__) 
 #  include <fcntl.h>
 #  ifdef lseek
 #   undef lseek
@@ -147,6 +147,7 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #include <windows.h>
 #include "libavutil/wchar_filename.h"
 
+#ifndef __COREDLL__
 #define DEF_FS_FUNCTION(name, wfunc, afunc)               \
 static inline int win32_##name(const char *filename_utf8) \
 {                                                         \
@@ -166,11 +167,19 @@ fallback:                                                 \
     /* filename may be be in CP_ACP */                    \
     return afunc(filename_utf8);                          \
 }
+#else
+#define DEF_FS_FUNCTION(name, wfunc, afunc)               \
+static inline int win32_##name(const char *filename_utf8) \
+{                                                         \
+    return afunc(filename_utf8);                          \
+}
+#endif
 
 DEF_FS_FUNCTION(unlink, _wunlink, _unlink)
 DEF_FS_FUNCTION(mkdir,  _wmkdir,  _mkdir)
 DEF_FS_FUNCTION(rmdir,  _wrmdir , _rmdir)
 
+#ifndef __COREDLL__
 #define DEF_FS_FUNCTION2(name, wfunc, afunc, partype)     \
 static inline int win32_##name(const char *filename_utf8, partype par) \
 {                                                         \
@@ -190,10 +199,22 @@ fallback:                                                 \
     /* filename may be be in CP_ACP */                    \
     return afunc(filename_utf8, par);                     \
 }
+#else
+#define DEF_FS_FUNCTION2(name, wfunc, afunc, partype)     \
+static inline int win32_##name(const char *filename_utf8, partype par) \
+{                                                         \
+    return afunc(filename_utf8, par);                     \
+}
+#endif
 
 DEF_FS_FUNCTION2(access, _waccess, _access, int)
+#ifndef __COREDLL__
 DEF_FS_FUNCTION2(stat, _wstati64, _stati64, struct stat*)
+#else
+DEF_FS_FUNCTION2(stat, _wstat, _stat, struct _stat*)
+#endif
 
+#ifndef __COREDLL__
 static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
 {
     wchar_t *src_w, *dest_w;
@@ -238,6 +259,12 @@ fallback:
 #endif
     return ret;
 }
+#else
+static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
+{
+    return rename(src_utf8, dest_utf8);
+}
+#endif
 
 #define mkdir(a, b) win32_mkdir(a)
 #define rename      win32_rename

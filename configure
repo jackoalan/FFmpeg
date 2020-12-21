@@ -6286,8 +6286,8 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     check_cc pthreads "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER"
 
     if enabled pthreads; then
-        check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
-        check_func pthread_cancel $pthreads_extralibs
+        check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs -lpthreadGC2 -lws2
+        check_func pthread_cancel $pthreads_extralibs -lpthreadGC2 -lws2
     fi
 fi
 
